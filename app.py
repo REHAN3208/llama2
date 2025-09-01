@@ -1,7 +1,8 @@
 import requests
 import streamlit as st
 
-API_URL = "http://localhost:11434/api/generate"
+API_URL = "http://127.0.0.1:11434/api/generate"
+
 MODEL_NAME = "tinyllama"
 
 st.title("TinyLlama Local Chat")

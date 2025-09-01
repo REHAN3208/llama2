@@ -1,39 +1,37 @@
 import requests
-import streamlit as st
+import json
 
 API_URL = "http://127.0.0.1:11434/api/generate"
-
 MODEL_NAME = "tinyllama"
 
-st.title("TinyLlama Local Chat")
+print("TinyLlama Chat (type 'exit' to quit)\n")
 
-if "history" not in st.session_state:
-    st.session_state.history = []
+while True:
+    prompt = input("You: ")
+    if prompt.lower() == "exit":
+        break
 
-user_input = st.text_input("Your message:")
+    try:
+        response = requests.post(API_URL, json={
+            "model": MODEL_NAME,
+            "prompt": prompt
+        }, stream=True)
 
-if st.button("Send") and user_input.strip():
-    # Add user message to history
-    st.session_state.history.append({"role": "user", "content": user_input})
+        print("TinyLlama: ", end="")
+        full_text = ""
 
-    # Call Ollama API
-    response = requests.post(API_URL, json={
-        "model": MODEL_NAME,
-        "prompt": user_input
-    })
+        for line in response.iter_lines():
+            if line:
+                try:
+                    data = json.loads(line.decode("utf-8"))
+                    token = data.get("response", "")
+                    print(token, end="", flush=True)
+                    full_text += token
+                except json.JSONDecodeError:
+                    pass
 
-    # Extract text from API response
-    if response.status_code == 200:
-        reply = response.json().get("response", "").strip()
-    else:
-        reply = "Error: " + response.text
+        print("\n")
+    except requests.exceptions.ConnectionError:
+        print("❌ Ollama server not running. Run: ollama serve\n")
+        break
 
-    # Add model reply to history
-    st.session_state.history.append({"role": "assistant", "content": reply})
-
-# Display chat history
-for msg in st.session_state.history:
-    if msg["role"] == "user":
-        st.markdown(f"**You:** {msg['content']}")
-    else:
-        st.markdown(f"**TinyLlama:** {msg['content']}")
